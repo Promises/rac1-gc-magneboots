@@ -11,36 +11,50 @@ namespace magneboots {
 
 // Hero.state.current: the hero's state.
 constexpr std::uint32_t kHeroState = 0x2084u;
-// Hero.target_speed: the ground speed (per frame) he eases toward; the stick handler writes it.
-constexpr std::uint32_t kTargetSpeed = 0x190u;
-// Hero.stick_magnitude: how far the stick is pushed, 0 to 1.
-constexpr std::uint32_t kStickMagnitude = 0x229Cu;
+// Hero.unk308: 1 while the Magneboots hold him to a magnetic surface under his feet (set by
+// update_hero_ground_material_effects after his update each tick: magnetic ground within 0.3,
+// and the boots on). The state machine reads it to put him in the magnet walk, to turn X into a
+// hop and to lock his items; resolve_hero_gravity_mode reads it for surface gravity.
+constexpr std::uint32_t kMagnetFlag = 0x308u;
+// Hero.ground_type: the collision type the ground probe found under him this tick (2 magnetic,
+// -1 none); update_hero_ground_material_effects reads and clears it after his update.
+constexpr std::uint32_t kGroundType = 0x12E0u;
+// Hero.ground_distance: from him to the probe's ground point, along his gravity.
+constexpr std::uint32_t kGroundDistance = 0x2DCu;
+// Hero.ground_normal: the probed ground's normal, which surface gravity pulls against. The probe
+// clears it (x and y) before it looks, so with nothing found it holds no direction.
+constexpr std::uint32_t kGroundNormal = 0x270u;
+// Hero.air_frames: frames off the ground, 0 on landing.
+constexpr std::uint32_t kAirFrames = 0x30Eu;
+// Hero.vehicle_mode: nonzero in a vehicle, as Clank, on a board.
+constexpr std::uint32_t kVehicleMode = 0x20A4u;
+// Hero.items[1].moby: what he wears on his feet (the Magneboots: moby class 0xAD).
+constexpr std::uint32_t kFeetModel = 0x1090u + 1u * 0x50u;
+// Moby.oclass.
+constexpr std::uint32_t kMobyClass = 0xA6u;
+constexpr std::int16_t kMagnebootsClass = 0xAD;
 
-// The state for walking on a magnetic surface with the Magneboots (hero_water_and_ground_motion.c,
-// case 0x3F; HERO_STATE_DIRECTION_LIMITED_GROUND_MOVE in the NTSC decomp).
+// Collision type of a magnetic surface.
+constexpr std::int16_t kMagneticGround = 2;
+
+// Hero states (games/rac1/decomp/include/enums/hero_state.h).
+constexpr std::int32_t kRun = 0x2;
+constexpr std::int32_t kJump = 0x7;
+// The Magneboots' own: the magnet walk, its wrench swing and its hop.
 constexpr std::int32_t kMagnetWalk = 0x3F;
-
-// hero_speed_steps: 16-byte rows {lower, upper, target_speed, step_up}. On foot,
-// update_hero_target_speed_from_stick picks row 0's target (walk) for a stick-derived target below
-// row 0's step_up, else row 1's (run), times the frame time.
-constexpr std::uint32_t kWalkTarget = 0x08u;
-constexpr std::uint32_t kWalkStepUp = 0x0Cu;
-constexpr std::uint32_t kRunTarget = 0x18u;
+constexpr std::int32_t kMagnetWrench = 0x70;
+constexpr std::int32_t kMagnetHop = 0x71;
 
 struct Disc {
     // g_hero.
     std::uint32_t hero;
-    // g_frame_time (the executable's): seconds a frame.
-    std::uint32_t frame_time;
-    // hero_speed_steps, level 0's address (each level program has its copy: relocate_level).
-    std::uint32_t speed_steps;
 };
 
 inline Disc disc_for(bool ntsc) {
     if (ntsc) {
-        return {0x0013F350u, 0x0015ED6Cu, 0x0017BDB8u};
+        return {0x0013F350u};
     }
-    return {0x0013F450u, 0x0015EE6Cu, 0x0017BEB8u};
+    return {0x0013F450u};
 }
 
 }  // namespace magneboots

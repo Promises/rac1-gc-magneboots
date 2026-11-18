@@ -28,8 +28,8 @@ find_package(OpenRACMod 1.20 REQUIRED)
 
 openrac_add_mod(gc_magneboots MANIFEST openrac-mod.json SOURCES src/mod.cpp)
 
-# The magnet walk's target speed (ctest; the workflow runs it on every platform).
+# The Gravity Boots rules (ctest; the workflow runs it on every platform).
 enable_testing()
-add_executable(gc_magneboots_test src/speed_test.cpp)
+add_executable(gc_magneboots_test src/gravity_boots_test.cpp)
 target_compile_features(gc_magneboots_test PRIVATE cxx_std_17)
-add_test(NAME speed COMMAND gc_magneboots_test)
+add_test(NAME gravity_boots COMMAND gc_magneboots_test)
