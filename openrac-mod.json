@@ -1,0 +1,13 @@
+{
+  "format": 2,
+  "id": "gc-magneboots",
+  "name": "Going Commando Magneboots",
+  "version": "0.1.0",
+  "author": "Henning Berge",
+  "description": "On magnetic surfaces Ratchet walks and runs at his normal speed and turns without stopping, like the Gravity Boots in Going Commando. A first step: jumping and weapons on magnetic surfaces come later.",
+  "license": "MIT",
+  "homepage": "https://github.com/Promises/rac1-gc-magneboots",
+  "api": "1.20",
+  "games": { "rac1": ["pal", "ntsc"] },
+  "hooks": ["rac1.player.approach_speed"]
+}
