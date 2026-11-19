@@ -120,4 +120,4 @@ void load(openrac::Mod& mod) {
 
 }  // namespace
 
-OPENRAC_MOD_CPP("gc-magneboots", "0.2.2", load)
+OPENRAC_MOD_CPP("gc-magneboots", "1.0.0", load)

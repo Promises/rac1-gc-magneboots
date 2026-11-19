@@ -13,13 +13,20 @@ A lock with no sha256 yet (a repository made from the SDK's template, whose own 
 its hash) takes the hash the release publishes beside the archive (<url>.sha256) and writes it into
 sdk.lock: commit it, and every later build is held to it. This file is the SDK's
 (template/tools/fetch_sdk.py); copy it again when it changes.
+
+This mod's copy also takes an SDK that has no release yet: a lock with "git" (OpenRAC's repository)
+and "commit" (a full commit id) instead of "url" and "sha256" takes the SDK's source folder, sdk/,
+from that commit (a sparse checkout, with git), checks that its sdk/VERSION is the lock's version,
+and puts it where the archive would go. Back to a released SDK with a lock of url and sha256.
 """
 from __future__ import annotations
 
 import argparse
 import hashlib
 import json
+import re
 import shutil
+import subprocess
 import sys
 import tempfile
 import urllib.request
@@ -29,11 +36,48 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 
 
+def from_git(lock: dict) -> int:
+    """The SDK of lock's commit, into .sdk/openrac-mod-sdk-<version>/; prints its folder."""
+    version, repo, commit = lock["version"], lock["git"], lock["commit"].lower()
+    if not re.fullmatch(r"[0-9a-f]{40}", commit):
+        print("fetch_sdk: sdk.lock's commit is not a full commit id", file=sys.stderr)
+        return 1
+    top = f"openrac-mod-sdk-{version}"
+    dest = ROOT / ".sdk"
+    stamp = dest / f"{top}.commit"
+    if (dest / top / "cmake").is_dir() and stamp.is_file() and stamp.read_text().strip() == commit:
+        print(dest / top)
+        return 0
+    dest.mkdir(exist_ok=True)
+    with tempfile.TemporaryDirectory(dir=dest) as tmp:
+        src = Path(tmp) / "openrac"
+        git = ["git", "-c", "advice.detachedHead=false"]
+        for step in (
+            [*git, "clone", "--quiet", "--filter=blob:none", "--no-checkout", repo, str(src)],
+            [*git, "-C", str(src), "sparse-checkout", "set", "sdk"],
+            [*git, "-C", str(src), "checkout", "--quiet", commit],
+        ):
+            if subprocess.run(step, stdout=sys.stderr).returncode != 0:
+                print(f"fetch_sdk: {' '.join(step[3:])} failed", file=sys.stderr)
+                return 1
+        got = (src / "sdk" / "VERSION").read_text().strip()
+        if got != version:
+            print(f"fetch_sdk: the SDK at {commit[:9]} is {got}, sdk.lock says {version}", file=sys.stderr)
+            return 1
+        shutil.rmtree(dest / top, ignore_errors=True)
+        (src / "sdk").rename(dest / top)
+    stamp.write_text(commit + "\n")
+    print(dest / top)
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--from", dest="source", type=Path, help="a local openrac-mod-sdk-<version>.zip")
     args = ap.parse_args(argv)
     lock = json.loads((ROOT / "sdk.lock").read_text())
+    if "git" in lock:
+        return from_git(lock)
     version, want = lock["version"], (lock.get("sha256") or "").lower()
     if not want:
         if args.source:

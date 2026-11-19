@@ -24,7 +24,7 @@ if(NOT OpenRACMod_DIR)
     endif()
   endif()
 endif()
-find_package(OpenRACMod 1.20 REQUIRED)
+find_package(OpenRACMod 1.23 REQUIRED)
 
 openrac_add_mod(gc_magneboots MANIFEST openrac-mod.json SOURCES src/mod.cpp)
 
