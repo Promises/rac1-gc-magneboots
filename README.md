@@ -5,6 +5,10 @@ Commando's **Gravity Boots** in place of the **Magneboots**. On magnetic surface
 runs, jumps and fights as on any ground, and a jump, a double jump or a step off an edge comes back
 down onto the surface. The item keeps its name.
 
+[![Going Commando Magneboots in game (video)](docs/video-thumbnail.jpg)](https://youtu.be/TKqdbXuQDlA)
+
+*▶ [Watch it on YouTube](https://youtu.be/TKqdbXuQDlA) (14 s, with sound).*
+
 In Ratchet & Clank the Magneboots have a slow magnet walk of their own (state 0x3F): about 3.5 units
 a second, a stop to turn when the stick points more than 70 degrees away, X as a hop on the spot,
 weapons and quick select locked, and the surface let go of 0.3 units off it. Going Commando has none
