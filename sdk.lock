@@ -1,5 +1,5 @@
 {
-  "about": "The OpenRAC mod SDK this mod builds against: tools/fetch_sdk.py puts it in .sdk/, where CMakeLists.txt finds it. Until an SDK release has the hook points this mod needs (rac1.player.enter_move_state, resolve_gravity_mode, update_equipped_items: OpenRAC #590), it is the SDK's source at a commit of OpenRAC's develop; back to a release's url and sha256 once one has them.",
+  "about": "The OpenRAC mod SDK this mod builds against: tools/fetch_sdk.py puts it in .sdk/, where CMakeLists.txt finds it. Until an SDK release has the hook points this mod needs (rac1.player.enter_move_state, resolve_gravity_mode, update_equipped_items, mod interface 1.22), it is the SDK's source at a commit of OpenRAC's develop; back to a release's url and sha256 once one has them.",
   "version": "1.23.0",
   "git": "https://github.com/OpenRAC/OpenRAC",
   "commit": "60101eec1ee08401454e06e814a61b92c28b2dd8"
