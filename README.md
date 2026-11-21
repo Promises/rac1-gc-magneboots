@@ -14,9 +14,9 @@ a second, a stop to turn when the stick points more than 70 degrees away, X as a
 weapons and quick select locked, and the surface let go of 0.3 units off it. Going Commando has none
 of that: its magnetic surfaces are plain ground with their own gravity.
 
-**Needs OpenRAC with mod interface 1.22 or later**, for three hook points it brought
+**Needs OpenRAC with mod interface 1.22 or later**, for three hook points it uses
 (`rac1.player.enter_move_state`, `rac1.player.resolve_gravity_mode`,
-`rac1.player.update_equipped_items`, OpenRAC #590). Until a release has it, that is the launcher's
+`rac1.player.update_equipped_items`). Until a release has it, that is the launcher's
 **Dev** update channel (Settings); the launcher holds the mod back on an older one rather than
 install something that cannot load. It is built against the SDK's source at a commit of OpenRAC's
 `develop` (`sdk.lock`), back to a released SDK once there is one.

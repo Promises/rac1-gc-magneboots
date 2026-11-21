@@ -13,7 +13,7 @@
 //                                       (Going Commando's 2.5, not 0.3), and on through a jump or a
 //                                       step off its edge until he lands (SurfaceHold)
 //   rac1.player.update_equipped_items   his items, flag hidden: no lock on weapons or quick select
-// The last three are new in OpenRAC (branch rac1-magneboot-hooks); a game without them refuses
+// The last three need mod interface 1.22 or later; a game without them refuses
 // the mod with the reason.
 #include <cstdint>
 
