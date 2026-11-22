@@ -33,3 +33,8 @@ enable_testing()
 add_executable(gc_magneboots_test src/gravity_boots_test.cpp)
 target_compile_features(gc_magneboots_test PRIVATE cxx_std_17)
 add_test(NAME gravity_boots COMMAND gc_magneboots_test)
+
+# The edge assist (ctest too).
+add_executable(gc_magneboots_edge_assist_test src/edge_assist_test.cpp)
+target_compile_features(gc_magneboots_edge_assist_test PRIVATE cxx_std_17)
+add_test(NAME edge_assist COMMAND gc_magneboots_edge_assist_test)

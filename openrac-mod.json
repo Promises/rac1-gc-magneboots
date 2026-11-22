@@ -2,7 +2,7 @@
   "format": 2,
   "id": "gc-magneboots",
   "name": "Going Commando Magneboots",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "author": "Henning Berge",
   "description": "Going Commando's Gravity Boots in place of the Magneboots: on magnetic surfaces Ratchet walks, runs, jumps and fights as on any ground, and a jump comes back down onto the surface. Needs OpenRAC with mod interface 1.22.",
   "license": "MIT",
@@ -18,6 +18,16 @@
     "rac1.player.update_motion_input",
     "rac1.player.enter_move_state",
     "rac1.player.resolve_gravity_mode",
-    "rac1.player.update_equipped_items"
+    "rac1.player.update_equipped_items",
+    "rac1.player.set_planar_velocity"
+  ],
+  "settings": [
+    {
+      "key": "edge_assist",
+      "name": "Edge assist",
+      "type": "bool",
+      "default": true,
+      "description": "A hidden help on narrow magnetic tracks: running at an edge, Ratchet is turned along it; keep pushing out over it and he steps off."
+    }
   ]
 }

@@ -131,7 +131,95 @@ void a_bad_normal_is_not_remembered() {
     check(!usable(Vec3{0, 0, 0}) && usable(Vec3{0, 1, 0}), "usable");
 }
 
+void the_hold_goes_on_over_tilted_plain_ground() {
+    SurfaceHold h;
+    const Vec3 wall{1.0f, 0.0f, 0.0f};
+    h.update({kMagneticGround, 0.0f, true, false}, 0, wall);
+    // Onto the underside of a plain pad (facing down), on the ground.
+    const Vec3 down{0.0f, 0.1f, -0.995f};
+    h.update({0, 0.0f, true, false}, 0, down);
+    check(h.active() && h.found() && !h.magnetic(), "held on, upside down on plain ground: held");
+    check(h.normal().z < -0.9f, "its normal taken");
+    // Steep plain ground (60 degrees from upright).
+    h.update({0, 0.0f, true, false}, 0, Vec3{0.866f, 0.0f, 0.5f});
+    check(h.active() && h.found(), "60 degrees from upright: held");
+    // Back near upright: the old rule, plain ground lets go.
+    h.update({0, 0.0f, true, false}, 0, Vec3{0.5f, 0.0f, 0.866f});
+    check(!h.active() && !h.found(), "30 degrees from upright, plain ground: let go");
+}
+
+void tilted_plain_ground_never_starts_a_hold() {
+    SurfaceHold h;
+    h.update({0, 0.0f, true, false}, 0, Vec3{0.0f, 0.0f, -1.0f});
+    check(!h.active() && !h.found(), "never held: plain ground upside down starts nothing");
+    h.update({kMagneticGround, 0.0f, true, false}, 0, Vec3{1.0f, 0.0f, 0.0f});
+    h.update({0, 0.0f, true, true}, 0, Vec3{0.0f, 0.0f, -1.0f});
+    check(!h.active(), "in a vehicle: let go");
+    h.update({kMagneticGround, 0.0f, true, false}, 0, Vec3{1.0f, 0.0f, 0.0f});
+    h.update({0, 0.0f, false, false}, 0, Vec3{0.0f, 0.0f, -1.0f});
+    check(!h.active(), "boots off: let go");
+}
+
 }  // namespace
+
+// What hero_set_state does with the feet slot (hero_idle_and_items.c): the Magneboots on, the flag
+// reading 0 and another foot item waiting: the take-off is asked for.
+void game_state_change(const Buffer& b) {
+    if (b.read<std::int16_t>(kHero + kMagnetFlag) == 0 && b.read<std::int32_t>(kHero + kFeetItem) == kMagnebootsItem) {
+        b.write(kHero + kRestoreFeetItem, std::int32_t{1});
+    }
+}
+
+std::int32_t restore(const Buffer& b) { return b.read<std::int32_t>(kHero + kRestoreFeetItem); }
+
+void the_boots_stay_on_through_a_state_change_on_the_surface() {
+    Buffer b;
+    b.write(kHero + kMagnetFlag, std::int16_t{1});
+    b.write(kHero + kFeetItem, kMagnebootsItem);
+    {
+        const BootsKeptOn<Buffer> boots(b, kHero);
+        const MagnetFlagHidden<Buffer> hidden(b, kHero);
+        game_state_change(b);
+        check(restore(b) == 1, "the game asks for the take-off with the flag hidden");
+    }
+    check(restore(b) == 0, "on the surface: the take-off is withdrawn");
+    check(flag(b) == 1, "and the flag is back");
+}
+
+void off_the_surface_the_boots_come_off_as_ever() {
+    Buffer b;
+    b.write(kHero + kFeetItem, kMagnebootsItem);
+    {
+        const BootsKeptOn<Buffer> boots(b, kHero);
+        const MagnetFlagHidden<Buffer> hidden(b, kHero);
+        game_state_change(b);
+    }
+    check(restore(b) == 1, "off the surface: the game's take-off stands");
+}
+
+void a_take_off_asked_for_before_stands() {
+    Buffer b;
+    b.write(kHero + kMagnetFlag, std::int16_t{1});
+    b.write(kHero + kFeetItem, kMagnebootsItem);
+    b.write(kHero + kRestoreFeetItem, std::int32_t{1});
+    {
+        const BootsKeptOn<Buffer> boots(b, kHero);
+        const MagnetFlagHidden<Buffer> hidden(b, kHero);
+        game_state_change(b);
+    }
+    check(restore(b) == 1, "a request from before the state change is left alone");
+}
+
+void other_foot_items_are_left_alone() {
+    Buffer b;
+    b.write(kHero + kMagnetFlag, std::int16_t{1});
+    b.write(kHero + kFeetItem, std::int32_t{0x1D});
+    {
+        const BootsKeptOn<Buffer> boots(b, kHero);
+        b.write(kHero + kRestoreFeetItem, std::int32_t{1});  // the Grindboots' own take-off
+    }
+    check(restore(b) == 1, "the Grindboots' take-off stands");
+}
 
 int main() {
     the_flag_is_hidden_and_put_back();
@@ -142,6 +230,12 @@ int main() {
     the_hold_lasts_through_a_jump_until_landing();
     the_hold_ends_on_other_ground_or_after_a_while();
     a_bad_normal_is_not_remembered();
+    the_hold_goes_on_over_tilted_plain_ground();
+    tilted_plain_ground_never_starts_a_hold();
+    the_boots_stay_on_through_a_state_change_on_the_surface();
+    off_the_surface_the_boots_come_off_as_ever();
+    a_take_off_asked_for_before_stands();
+    other_foot_items_are_left_alone();
     if (failures == 0) {
         std::printf("gravity_boots: all passed\n");
     }

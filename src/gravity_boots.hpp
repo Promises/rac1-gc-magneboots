@@ -31,6 +31,12 @@ constexpr float kHoldDistance = 2.5f;
 // Going Commando's jumps on one (its states 59, 109, 110 hold gravity whatever the distance), until
 // he lands or this many frames have gone by; then the world's.
 constexpr int kAirHoldFrames = 90;
+// Held, on the ground and tilted more than 45 degrees from upright (its normal's z below this), he
+// keeps the surface's gravity on any ground, magnetic or not, as Ratchet & Clank's magnet walk does
+// (resolve_hero_gravity_mode is 1 in state 0x3F whatever the ground; 0x3F gives way to the run only
+// on plain ground within 45 degrees of upright): the pad under the Oltanis elevator (class 685),
+// which he rides upside down at the top of a magnetic track.
+constexpr float kUprightNormalZ = 0.70710678f;
 
 // While alive, the hero's Magneboots flag reads 0; then it is put back, unless the game set it
 // meanwhile. Nests: an inner one finds it hidden and changes nothing.
@@ -57,6 +63,39 @@ private:
     const Memory& m_memory;
     std::uint32_t m_flag;
     std::int16_t m_saved;
+};
+
+// Alive across a state change on a magnetic surface (enter_move_state, the flag hidden): the state
+// change takes the Magneboots off when they are on, the flag reads 0 and another foot item waits to
+// go back on (Hero.saved_item[1]: the Grindboots, or whatever he wore when the boots were forced
+// in), so with the flag hidden it would ask for that on every state change on the surface (a step,
+// a weapon, a jump). The boots off, the surface lets go of him. Made before the flag is hidden: when
+// the flag was really set and the boots on, a take-off asked for meanwhile is withdrawn, which is
+// what the game itself does with the flag set (it never asks). The item code acts on the request
+// later in the tick, outside the state change, so withdrawing it here is in time.
+template <class Memory>
+class BootsKeptOn {
+public:
+    BootsKeptOn(const Memory& memory, std::uint32_t hero)
+        : m_memory(memory),
+          m_hero(hero),
+          m_watch(memory.template read<std::int16_t>(hero + kMagnetFlag) != 0 &&
+                  memory.template read<std::int32_t>(hero + kFeetItem) == kMagnebootsItem &&
+                  memory.template read<std::int32_t>(hero + kRestoreFeetItem) == 0) {}
+
+    ~BootsKeptOn() {
+        if (m_watch && m_memory.template read<std::int32_t>(m_hero + kFeetItem) == kMagnebootsItem) {
+            m_memory.write(m_hero + kRestoreFeetItem, std::int32_t{0});
+        }
+    }
+
+    BootsKeptOn(const BootsKeptOn&) = delete;
+    BootsKeptOn& operator=(const BootsKeptOn&) = delete;
+
+private:
+    const Memory& m_memory;
+    std::uint32_t m_hero;
+    bool m_watch;
 };
 
 // The state the game asked for, as Going Commando would have it: its own on plain ground.
@@ -108,13 +147,21 @@ inline bool usable(const Vec3& n) {
     return std::isfinite(l) && l > 0.5f && l < 1.5f;
 }
 
+// Whether a hold already on goes on over ground that is not magnetic: on it (no frames in the air),
+// tilted more than 45 degrees from upright (kUprightNormalZ), the boots on and not in a vehicle.
+inline bool keeps_tilted(const Probe& p, int air_frames, const Vec3& normal) {
+    return p.wearing_boots && !p.in_vehicle && air_frames == 0 && usable(normal) && normal.z < kUprightNormalZ;
+}
+
 // The surface's gravity, from one update to the next: on a magnetic surface within kHoldDistance,
-// and on, with that surface's normal, through the air until he lands elsewhere or kAirHoldFrames.
+// on any ground tilted past 45 degrees he is on while held (keeps_tilted), and on, with that
+// surface's normal, through the air until he lands elsewhere or kAirHoldFrames.
 class SurfaceHold {
 public:
     // After his update: what the probe found, his frames in the air and the probe's normal.
     void update(const Probe& probe, int air_frames, const Vec3& normal) {
-        m_found = holds(probe);
+        m_magnetic = holds(probe);
+        m_found = m_magnetic || (m_active && keeps_tilted(probe, air_frames, normal));
         if (m_found) {
             m_active = true;
             if (usable(normal)) {
@@ -130,7 +177,11 @@ public:
 
     bool active() const { return m_active; }
 
-    // Whether this update's probe found the surface itself; if not, the game's ground normal is
+    // Whether this update's probe found a magnetic surface within kHoldDistance (not just tilted
+    // ground the hold goes on over).
+    bool magnetic() const { return m_magnetic; }
+
+    // Whether this update's probe found the surface itself (or tilted ground it goes on over); if not, the game's ground normal is
     // what is left of the probe's clearing (no direction, or a wrong one on a sloped wall), and
     // normal() stands in for it.
     bool found() const { return m_found; }
@@ -141,6 +192,7 @@ public:
 private:
     bool m_active = false;
     bool m_found = false;
+    bool m_magnetic = false;
     Vec3 m_normal{0.0f, 0.0f, 1.0f};
 };
 
